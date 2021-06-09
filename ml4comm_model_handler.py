@@ -103,6 +103,27 @@ class ModelHandler:
             
             architecture = Model(inputs = input_lid, outputs = out)
             
+        elif(model_type == 'lidar_simple'):
+            dropProb=0.3
+            input_lid = Input(shape = input_shape)
+                        
+            layer = Conv2D(10,kernel_size=(13,13),
+                                activation='relu',
+                                padding="SAME",
+                                input_shape=input_shape)(input_lid)
+            layer = Conv2D(10, (11, 11), padding="SAME", activation='relu')(layer)
+            layer = MaxPooling2D(pool_size=(3, 5))(layer)
+            layer = Dropout(dropProb)(layer)
+            layer = Conv2D(10, (7, 7), padding="SAME", activation='relu')(layer)
+            layer = MaxPooling2D(pool_size=(1, 2))(layer)
+            layer = Dropout(dropProb)(layer)
+            layer = Conv2D(10, (3, 3), padding="SAME", activation='relu')(layer)
+            layer = MaxPooling2D(pool_size=(1, 2))(layer)
+            layer = Dropout(dropProb)(layer)
+            layer = Flatten()(layer)
+            out = Dense(num_classes,activation='softmax')(layer)
+            
+            architecture = Model(inputs = input_lid, outputs = out)
                         
         
         return architecture
