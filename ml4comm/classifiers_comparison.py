@@ -1,17 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
-"""
-=====================
-Classifier comparison
-=====================
-A comparison of a several classifiers in scikit-learn. From:
-http://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html
-AK Feb 7, 2018.
-"""
-print(__doc__)
-
-
 # Code source: Gaël Varoquaux
 #              Andreas Müller
 # Modified for documentation by Jaques Grobler and by Aldebaro Klautau
@@ -19,16 +7,6 @@ print(__doc__)
 
 import numpy as np
 import csv
-
-#enable if want to plot images:
-#import matplotlib
-#matplotlib.use('WebAgg')
-#matplotlib.use('Qt5Agg')
-#matplotlib.use('agg')
-#matplotlib.inline()
-#import matplotlib.pyplot as plt
-
-#from matplotlib.colors import ListedColormap
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
