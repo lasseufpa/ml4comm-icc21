@@ -44,7 +44,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 
-from ml4comm_plot_decision_regions import ser
+from ml4comm.qam_analyzer import ser
 
 
 def train_classifier(clf_name, X, y, num_classes):
