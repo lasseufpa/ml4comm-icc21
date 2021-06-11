@@ -10,6 +10,25 @@ import matplotlib.pyplot as plt
 import commpy.channels
 from commpy.channels import SISOFlatChannel
 
+def qam_constellation(M, unitAvgPower=True):
+    bits_per_QAMsymbol = int(np.log2(M))
+    bitarrays = [cu.dec2bitarray(obj, bits_per_QAMsymbol)
+                 for obj
+                 in np.arange(0, M)]
+    qammod = cm.QAMModem(M)
+    const  = np.array([complex(qammod.modulate(bits)) for bits in bitarrays])
+
+    if unitAvgPower:
+        const = const / np.sqrt((M - 1) * (2 ** 2) / 6)
+
+    return const
+
+def qam_demod(x, M, unitAvgPower=True):
+    const = qam_constellation(M, unitAvgPower=unitAvgPower)
+
+    const = const.reshape(const.shape[0], 1)
+    return abs(x - const).argmin(0)
+
 def generate_symbols(transmissions=100, M=16):
     """
     Parameters
@@ -21,16 +40,7 @@ def generate_symbols(transmissions=100, M=16):
     Returns
     -------
     """
-    bits_per_QAMsymbol = int(np.log2(M))
-    bitarrays = [cu.dec2bitarray(obj, bits_per_QAMsymbol)
-                 for obj
-                 in np.arange(0, M)]
-    #print(bitarrays)
-    qammod = cm.QAMModem(M)
-    const  = np.array([complex(qammod.modulate(bits)) for bits in bitarrays])
-
-    # unit average power
-    constellation = const / np.sqrt((M - 1) * (2 ** 2) / 6)
+    constellation = qam_constellation(M, unitAvgPower=True)
 
     ind = np.random.randint(M, size=transmissions)
 

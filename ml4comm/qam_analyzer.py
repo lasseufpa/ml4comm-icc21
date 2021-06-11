@@ -3,8 +3,21 @@ import numpy as np
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import special as sp
 from sklearn.metrics import confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
+
+def _qfunc(x):
+    return 0.5-0.5*sp.erf(x/np.sqrt(2))
+
+def theoretical_ser(M, SNR_db):
+    """ Calculate the theoretical probability of error for SQ M-QAM.
+    """
+    SNR_l = 10**(SNR_db/10)
+    Pe = 4*(1-(1/np.sqrt(M)))*_qfunc(np.sqrt(3*SNR_l/(M-1))) \
+         - 4*(1-(1/np.sqrt(M)))**2 * _qfunc(np.sqrt(3*SNR_l/(M-1)))**2
+
+    return Pe
 
 def ser(clf, X, y):
     """ Calculate the misclassification rate, which
