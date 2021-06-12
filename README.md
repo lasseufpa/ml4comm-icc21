@@ -6,7 +6,19 @@ Aldebaro Klautau (UFPA), Nuria Gonzalez-Prelcic (NCSU) and Robert W. Heath Jr. (
 
 June 14, 2021
 
-# Installation
+# Installation of MimoRL-simple-1-v0 RL agent
+
+The RL agent is executed at a base station (BS) with an antenna array and serves single-antenna users on downlink using an analog MIMO architecture with Nb beam vector indices. The BS and users live in a M x M grid world in which there are M2 invariant channels depending only on position. An episode lasts Ne time slots, and for each episode, a user moves left/right/up/down. It is an episodic (not continuing) task. The reward is the normalized throughput T and a penalyy of -100 is added to T if a user is not allocated for Na consecutive slots and zero otherwise
+
+
+The state is defined as a vector with Nu elements for the users’ positions and Na-1 indices of the previously scheduled users.
+The agent action is, at each time slot, to schedule one among Nu users and choose the beam index to serve this user.
+
+- Install OpenAI gym ...
+
+- How to run ours
+
+# Installation of beam_selection notebook
 
 In order to run the *beam_selection.ipynb* notebook, you need to download the input and output data for the neural network.
 The files can be obtained at https://nextcloud.lasseufpa.org/s/mrzEiQXE83YE3kg
