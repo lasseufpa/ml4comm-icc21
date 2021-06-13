@@ -37,7 +37,7 @@ class Mimo_RL_simple(gym.Env):
         #directions: up, down, right, left
         self.position_updates = np.array([[0,1],[0,-1],[1,0],[-1,0]])
 
-        #adopt three bidirectional maps
+        #We adopt bidirectional maps based on https://pypi.org/project/bidict/
         self.bidict_actions = convert_list_of_possible_tuples_in_bidct(self.get_all_possible_actions())
         self.bidict_states = convert_list_of_possible_tuples_in_bidct(self.get_all_possible_states())
         #self.bidict_rewards = convert_list_of_possible_tuples_in_bidct()
