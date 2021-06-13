@@ -1,5 +1,5 @@
 from numpy.random import randint
-from beams_calculation import AnalogBeamformer
+from beamforming_calculation import AnalogBeamformer
 from render_mimo_rl_simple import Mimo_RL_render
 from env_mimo_rl_simple import Mimo_RL_Simple_Env
 from channel_mimo_rl_simple import Grid_Mimo_Channel

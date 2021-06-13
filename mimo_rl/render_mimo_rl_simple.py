@@ -6,7 +6,7 @@ import numpy as np
 import pygame as pg
 import pyscreenshot as ImageGrab
 import imageio
-from beams_calculation import AnalogBeamformer
+from beamforming_calculation import AnalogBeamformer
 
 SLEEP_TIME = 0.3
 MAX_ITERATIONS = 10

@@ -14,7 +14,7 @@ import numpy as np
 from numpy.random import rand #uniform [0,1)
 from numpy.random import randn #Gaussian
 import copy
-from beams_calculation import getNarrowBandULAMIMOChannel
+from beamforming_calculation import getNarrowBandULAMIMOChannel
 from bidict import bidict
 from mimo_rl_tools import get_position_combinations
 from mimo_rl_tools import convert_list_of_possible_tuples_in_bidict

@@ -10,7 +10,7 @@ from bidict import bidict
 import itertools
 import gym
 from gym import spaces
-from beams_calculation import AnalogBeamformer
+from beamforming_calculation import AnalogBeamformer
 from channel_mimo_rl_simple import Grid_Mimo_Channel
 from mimo_rl_tools import convert_list_of_possible_tuples_in_bidict
 from mimo_rl_tools import get_position_combinations
