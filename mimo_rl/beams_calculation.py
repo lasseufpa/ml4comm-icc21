@@ -1,59 +1,65 @@
+'''
+Assumes ULA at base station and single-antenna users.
+'''
 import numpy as np
 
 class AnalogBeamformer:
     def __init__(self, num_antenna_elements=32):
         self.num_antenna_elements = num_antenna_elements
         self.codebook = dft_codebook(self.num_antenna_elements)
-        num_points = 500 #resolution for plotting the beams
-        #dimension num_points x num_antenna_elements
-        self.beams_for_plotting, self.angles_for_plotting = self.get_steered_factors(num_antenna_elements, num_points)
+        num_points = 500  # resolution for plotting the beams
+        # dimension num_points x num_antenna_elements
+        self.beams_for_plotting, self.angles_for_plotting = self.get_steered_factors(
+            num_antenna_elements, num_points)
 
-    def get_steered_factors(self,num_antenna_elements, num_points):
-        #Calculate the steering factor        
-        theta = np.linspace(-np.pi,np.pi,num_points) #grid, in angular domain
+    def get_steered_factors(self, num_antenna_elements, num_points):
+        # Calculate the steering factor
+        # grid, in angular domain
+        theta = np.linspace(-np.pi, np.pi, num_points)
         theta = theta[:, np.newaxis]
-        #AK arrayFactors = arrayFactorGivenAngleForULA(Rx.NTx,theta)
-        arrayFactors = self.arrayFactorGivenAngleForULA(num_antenna_elements,theta)
-        steeredArrayFactors = np.squeeze(np.matmul(arrayFactors, self.codebook))
+        arrayFactors = arrayFactorGivenAngleForULA(
+            num_antenna_elements, theta)
+        steeredArrayFactors = np.squeeze(
+            np.matmul(arrayFactors, self.codebook))
         return steeredArrayFactors, theta
 
+    def get_num_codevectors(self):
+        return self.codebook.shape[0]
 
-    def ULA_best_beam(self, H):
+    def get_best_beam_index(self, H):
         EquivalentChannels = np.dot(np.squeeze(np.asarray(H)), self.codebook)
         bestIndex = np.argmax(np.abs(EquivalentChannels))
         return bestIndex
 
-    def channel(position,Nt=64, Nr=1):
-        drone_data = drone_info(UE = list(position))
-        # Calculate de H for all codebook, and return the index of the best beam
-        Ht = processChannelRandomGeo(data=drone_data,spread=1,Nr = Nr, Nt = Nt)
-        return H
+    def get_combined_channel(self, beam_index, channel_h):
+        combined_channel = np.dot(np.squeeze(
+            np.asarray(channel_h)), self.codebook[:,beam_index])
+        combined_channel = float(np.abs(combined_channel))
+        return combined_channel
 
-    def crazy_channel(angle,Nt=64, Nr=1):
-        # Calculate de H for all codebook, and return the index of the best beam
-        Ht = processCrazyChannels(angle,spread=1,Nr = Nr, Nt = Nt)
-        return Ht
-
-    def chosen_precoder(index, H, Txcodebook):
-        codebook_tx = Txcodebook
-        EquivalentChannels = np.dot(np.squeeze(np.asarray(H)), codebook_tx[:, index])
-        return np.abs(EquivalentChannels)
-
-    def arrayFactorGivenAngleForULA(self,numAntennaElements, theta, normalizedAntDistance=0.5, angleWithArrayNormal=0):
-        indices = np.arange(numAntennaElements)
-        if (angleWithArrayNormal == 1):
-            arrayFactor = np.exp(1j * 2 * np.pi * normalizedAntDistance * indices * np.sin(theta))
-        else:  # default
-            arrayFactor = np.exp(1j * 2 * np.pi * normalizedAntDistance * indices * np.cos(theta))
-        arrayFactor = arrayFactor / np.sqrt(numAntennaElements)
-        return arrayFactor  # normalize to have unitary norm
+# used
 
 
-def calc_omega(elevationAngles, azimuthAngles, normalizedAntDistance = 0.5):
+def arrayFactorGivenAngleForULA(self, numAntennaElements, theta, normalizedAntDistance=0.5, angleWithArrayNormal=0):
+    indices = np.arange(numAntennaElements)
+    if (angleWithArrayNormal == 1):
+        arrayFactor = np.exp(
+            1j * 2 * np.pi * normalizedAntDistance * indices * np.sin(theta))
+    else:  # default
+        arrayFactor = np.exp(
+            1j * 2 * np.pi * normalizedAntDistance * indices * np.cos(theta))
+    arrayFactor = arrayFactor / np.sqrt(numAntennaElements)
+    return arrayFactor  # normalize to have unitary norm
+
+
+def calc_omega(elevationAngles, azimuthAngles, normalizedAntDistance=0.5):
     sinElevations = np.sin(elevationAngles)
-    omegax = 2 * np.pi * normalizedAntDistance * sinElevations * np.cos(azimuthAngles)
-    omegay = 2 * np.pi * normalizedAntDistance * sinElevations * np.sin(azimuthAngles)
+    omegax = 2 * np.pi * normalizedAntDistance * \
+        sinElevations * np.cos(azimuthAngles)
+    omegay = 2 * np.pi * normalizedAntDistance * \
+        sinElevations * np.sin(azimuthAngles)
     return np.matrix((omegax, omegay))
+
 
 def calc_vec_i(i, omega, antenna_range):
     print('a ', omega[:, i])
@@ -62,11 +68,13 @@ def calc_vec_i(i, omega, antenna_range):
     print('c ', np.matrix(np.kron(vec[1], vec[0])).shape)
     return np.matrix(np.kron(vec[1], vec[0]))
 
+
 def dft_codebook(dim):
     seq = np.matrix(np.arange(dim))
     mat = seq.conj().T * seq
     w = np.exp(-1j * 2 * np.pi * mat / dim)
     return w
+
 
 def getNarrowBandULAMIMOChannel(azimuths_tx, azimuths_rx, p_gainsdB, number_Tx_antennas, number_Rx_antennas,
                                 normalizedAntDistance=0.5, angleWithArrayNormal=0, pathPhases=None):
@@ -100,14 +108,14 @@ def getNarrowBandULAMIMOChannel(azimuths_tx, azimuths_rx, p_gainsdB, number_Tx_a
     path_gain = np.power(10, gain_dB / 10)
     path_gain = np.sqrt(path_gain)
 
-    #generate uniformly distributed random phase in radians
+    # generate uniformly distributed random phase in radians
     if pathPhases is None:
         pathPhases = 2*np.pi * np.random.rand(len(path_gain))
     else:
-        #convert from degrees to radians
+        # convert from degrees to radians
         pathPhases = np.deg2rad(pathPhases)
 
-    #include phase information, converting gains in complex-values
+    # include phase information, converting gains in complex-values
     path_complexGains = path_gain * np.exp(-1j * pathPhases)
 
     # recall that in the narrowband case, the time-domain H is the same as the
@@ -118,12 +126,14 @@ def getNarrowBandULAMIMOChannel(azimuths_tx, azimuths_rx, p_gainsdB, number_Tx_a
                                                    angleWithArrayNormal))
         ar = np.matrix(arrayFactorGivenAngleForULA(number_Rx_antennas, azimuths_rx[i], normalizedAntDistance,
                                                    angleWithArrayNormal))
-        H = H + path_complexGains[i] * ar.conj().T * at  # outer product of ar Hermitian and at
+        # outer product of ar Hermitian and at
+        H = H + path_complexGains[i] * ar.conj().T * at
     factor = (np.linalg.norm(path_complexGains) / np.sum(path_complexGains)) * np.sqrt(
         number_Rx_antennas * number_Tx_antennas)  # scale channel matrix
     H *= factor  # normalize for compatibility with Anum's Matlab code
 
     return H
+
 
 def arrayFactorGivenAngleForULA(numAntennaElements, theta, normalizedAntDistance=0.5, angleWithArrayNormal=0):
     '''
@@ -141,11 +151,14 @@ def arrayFactorGivenAngleForULA(numAntennaElements, theta, normalizedAntDistance
     '''
     indices = np.arange(numAntennaElements)
     if (angleWithArrayNormal == 1):
-        arrayFactor = np.exp(1j * 2 * np.pi * normalizedAntDistance * indices * np.sin(theta))
+        arrayFactor = np.exp(
+            1j * 2 * np.pi * normalizedAntDistance * indices * np.sin(theta))
     else:  # default
-        arrayFactor = np.exp(1j * 2 * np.pi * normalizedAntDistance * indices * np.cos(theta))
+        arrayFactor = np.exp(
+            1j * 2 * np.pi * normalizedAntDistance * indices * np.cos(theta))
     arrayFactor = arrayFactor / np.sqrt(numAntennaElements)
     return arrayFactor  # normalize to have unitary norm
+
 
 def calc_rx_power(departure_angle, arrival_angle, p_gain, antenna_number, frequency=6e10):
     """This .m file uses a m*m SQUARE UPA, so the antenna number at TX, RX will be antenna_number^2.
@@ -208,54 +221,60 @@ def calc_rx_power(departure_angle, arrival_angle, p_gain, antenna_number, freque
     t1 = wt.conj().T * H * wr
     return t1
 
+
 def getDFTOperatedChannel(H, number_Tx_antennas, number_Rx_antennas):
     wt = dft_codebook(number_Tx_antennas)
     wr = dft_codebook(number_Rx_antennas)
     dictionaryOperatedChannel = wr.conj().T * H * wt
     # dictionaryOperatedChannel2 = wr.T * H * wt.conj()
-    return dictionaryOperatedChannel  # return equivalent channel after precoding and combining
+    # return equivalent channel after precoding and combining
+    return dictionaryOperatedChannel
+
 
 def getCodebookOperatedChannel(H, Wt, Wr):
-    if Wr is None: #only 1 antenna at Rx, and Wr was passed as None
+    if Wr is None:  # only 1 antenna at Rx, and Wr was passed as None
         return H * Wt
-    if Wt is None: #only 1 antenna at Tx
+    if Wt is None:  # only 1 antenna at Tx
         return Wr.conj().T * H
-    return Wr.conj().T * H * Wt # return equivalent channel after precoding and combining
+    return Wr.conj().T * H * Wt  # return equivalent channel after precoding and combining
+
 
 def friis_propagation(Ptx, R, freq, gain=5):
     h = sc.c / freq
-    #gain and effectiver aperture default for isotropic ideal antenna
+    # gain and effectiver aperture default for isotropic ideal antenna
     Prx = (20*np.log10((h/(4*np.pi*R)**2))+Ptx+gain)
     return Pr
 
-def processChannelRandomGeo(data, spread = 1, Nr= 1, Nt = 64):
+
+def processChannelRandomGeo(data, spread=1, Nr=1, Nt=64):
     seed = 75648
-    np.random.seed(seed)  
+    np.random.seed(seed)
     numRays = 2
-    freq =5e9
-    Ptx = 30 #(db)
+    freq = 5e9
+    Ptx = 30  # (db)
     angle_spread = spread
     departure = data[0]
     arrival = data[1]
     distance = data[2]
 
     gain = np.random.randn(numRays+10) + np.random.randn(numRays)
-    #gain_in_dB = 20*np.log10(np.abs(gain))  
+    #gain_in_dB = 20*np.log10(np.abs(gain))
     gain_in_dB = friis_propagation(Ptx, distance, freq, gain=gain)
     AoD_az = departure + angle_spread*np.random.randn(numRays)
     AoA_az = arrival + angle_spread*np.random.randn(numRays)
     phase = np.angle(gain)*180/np.pi
-        
-    Ht = getNarrowBandULAMIMOChannel(AoD_az, AoA_az, gain_in_dB, Nt, Nr, pathPhases=phase) 
-    Ht = Ht / np.linalg.norm(Ht) #normalize channel to unit norm
+
+    Ht = getNarrowBandULAMIMOChannel(
+        AoD_az, AoA_az, gain_in_dB, Nt, Nr, pathPhases=phase)
+    Ht = Ht / np.linalg.norm(Ht)  # normalize channel to unit norm
 
     return Ht
 
 
-def processCrazyChannels(angle, spread = 1, Nr= 1, Nt = 64):
+def processCrazyChannels(angle, spread=1, Nr=1, Nt=64):
     seed = 75648
-    np.random.seed(seed)  
-    numRays = 2   
+    np.random.seed(seed)
+    numRays = 2
     #Ht = np.zeros((Nr,Nt))
     angle_spread = spread
     departure = angle
@@ -265,22 +284,24 @@ def processCrazyChannels(angle, spread = 1, Nr= 1, Nt = 64):
         arrival = 180-departure
 
     gain = np.random.randn(numRays) + np.random.randn(numRays)
-    gain_in_dB = 20*np.log10(np.abs(gain))  
+    gain_in_dB = 20*np.log10(np.abs(gain))
     AoD_az = departure + angle_spread*np.random.randn(numRays)
     AoA_az = arrival + angle_spread*np.random.randn(numRays)
     phase = np.angle(gain)*180/np.pi
-        
-    Ht = getNarrowBandULAMIMOChannel(AoD_az, AoA_az, gain_in_dB, Nt, Nr, pathPhases=phase)
-    
-    Ht = Ht / np.linalg.norm(Ht) #normalize channel to unit norm
+
+    Ht = getNarrowBandULAMIMOChannel(
+        AoD_az, AoA_az, gain_in_dB, Nt, Nr, pathPhases=phase)
+
+    Ht = Ht / np.linalg.norm(Ht)  # normalize channel to unit norm
 
     return Ht
 
-def processChannelRandomGeo_forNLOS(spread = 1, Nr= 1, Nt = 64):
+
+def processChannelRandomGeo_forNLOS(spread=1, Nr=1, Nt=64):
     seed = 75648
     np.random.seed(seed)
-    angles = [35+90, 60] # NLOS input range for ITU paper ->[20, 50]
-    numRays = 2   
+    angles = [35+90, 60]  # NLOS input range for ITU paper ->[20, 50]
+    numRays = 2
     angle_spread = spread
     departure = angles[0]
     arrival = angles[1]
@@ -288,13 +309,22 @@ def processChannelRandomGeo_forNLOS(spread = 1, Nr= 1, Nt = 64):
     #numValidChannels = 0
     #print('Processing ...')
     gain = np.random.randn(numRays) + np.random.randn(numRays)
-    gain_in_dB = 20*np.log10(np.abs(gain))  
+    gain_in_dB = 20*np.log10(np.abs(gain))
     AoD_az = departure + angle_spread*np.random.randn(numRays)
     AoA_az = arrival + angle_spread*np.random.randn(numRays)
     phase = np.angle(gain)*180/np.pi
-        
-    Ht = getNarrowBandULAMIMOChannel(AoD_az, AoA_az, gain_in_dB, Nt, Nr, pathPhases=phase)
-    
-    Ht = Ht / np.linalg.norm(Ht) #normalize channel to unit norm
+
+    Ht = getNarrowBandULAMIMOChannel(
+        AoD_az, AoA_az, gain_in_dB, Nt, Nr, pathPhases=phase)
+
+    Ht = Ht / np.linalg.norm(Ht)  # normalize channel to unit norm
 
     return Ht
+
+
+if __name__ == '__main__':
+    analogBeamformer = AnalogBeamformer()
+    print('# codevectors=', analogBeamformer.get_num_codevectors())
+    beam_index = 5
+    channel_h = np.ones((1,32))
+    print('gain mag=',analogBeamformer.get_combined_channel(beam_index, channel_h))

@@ -10,14 +10,21 @@ from bidict import bidict
 import itertools
 import gym
 from gym import spaces
+from beams_calculation import AnalogBeamformer
+from channel_mimo_rl_simple import Grid_Mimo_Channel
+from mimo_rl_tools import convert_list_of_possible_tuples_in_bidict
+from mimo_rl_tools import get_position_combinations
 
-class Mimo_RL_simple(gym.Env):
+class Mimo_RL_Simple_Env(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self,num_of_beams=32):
-        super(Mimo_RL_simple, self).__init__()
+    def __init__(self, analogBeamformer, grid_Mimo_Channel):
+        super(Mimo_RL_Simple_Env, self).__init__()
         self.__version__ = "0.1.0"
+
+        self.analogBeamformer = analogBeamformer
+        self.grid_Mimo_Channel = grid_Mimo_Channel
 
         #TODO need to conclude this code for option "False". Use "True"
         #Use True to represent the state by an integer index, as in a 
@@ -28,9 +35,10 @@ class Mimo_RL_simple(gym.Env):
         self.penalty = 100 #if not switching among users
         #a single user can be served by the base station
         self.Nu = 2 #number of users
-        self.Nb = num_of_beams #number of beams
+        self.Nb = self.analogBeamformer.get_num_codevectors() #number of beams
         self.Na = 3 #user must be allocated at least once in Na allocations
-        self.grid_size = 6 #define grid size: grid_size x grid_size
+        #define grid size: grid_size x grid_size
+        self.grid_size = self.grid_Mimo_Channel.grid_size 
         #directions each user takes (left, right, up, down). Chosen at the
         #beginning of each episode
         self.users_directions_indices = np.zeros(self.Nu)
@@ -39,9 +47,9 @@ class Mimo_RL_simple(gym.Env):
         self.last_action_index = -1 #last taken action
 
         #We adopt bidirectional maps based on https://pypi.org/project/bidict/
-        self.bidict_actions = convert_list_of_possible_tuples_in_bidct(self.get_all_possible_actions())
-        self.bidict_states = convert_list_of_possible_tuples_in_bidct(self.get_all_possible_states())
-        #self.bidict_rewards = convert_list_of_possible_tuples_in_bidct()
+        self.bidict_actions = convert_list_of_possible_tuples_in_bidict(self.get_all_possible_actions())
+        self.bidict_states = convert_list_of_possible_tuples_in_bidict(self.get_all_possible_states())
+        #self.bidict_rewards = convert_list_of_possible_tuples_in_bidict()
         #I don't need a table for all the rewards. I will generate them as we go. 
         #Otherwise I would implement:
         #def get_all_possible_rewards(self):
@@ -88,7 +96,7 @@ class Mimo_RL_simple(gym.Env):
         #get current state
         positions, previously_scheduled = self.interpret_state(self.current_state_index)
 
-        throughput = self.get_througput(beam_index)
+        throughput = self.get_througput(scheduled_user, beam_index)
         self.reward = throughput
 
         allocated_users = np.array(previously_scheduled)
@@ -147,10 +155,11 @@ class Mimo_RL_simple(gym.Env):
     #note that bidict cannot hash numpy arrays. We will use tuples
     def get_all_possible_states(self):
         #positions: we are restricted to square M x M grids
-        positions_x_axis = np.arange(self.grid_size)
+        all_positions = get_position_combinations(self.grid_size, self.Nu)        
+        #positions_x_axis = np.arange(self.grid_size)
         #positions_y_axis = np.arange(self.grid_size)
-        all_positions_single_user = list(itertools.product(positions_x_axis, repeat=2))
-        all_positions = list(itertools.product(all_positions_single_user, repeat=self.Nu))
+        #all_positions_single_user = list(itertools.product(positions_x_axis, repeat=2))
+        #all_positions = list(itertools.product(all_positions_single_user, repeat=self.Nu))
 
         #previously scheduled users
         previously_scheduled = list(itertools.product(np.arange(self.Nu), repeat=self.Na-1))
@@ -181,6 +190,7 @@ class Mimo_RL_simple(gym.Env):
         previously_scheduled = state[1]
         return positions, previously_scheduled
 
+    #TODO avoid obstacles and base station
     def update_users_positions(self, positions):
         positions_as_array = np.array(positions)
         new_positions = list()        
@@ -189,13 +199,16 @@ class Mimo_RL_simple(gym.Env):
             #wrap-around grid:
             new_position_array[np.where(new_position_array>self.grid_size-1)] = 0
             new_position_array[np.where(new_position_array<0)] = self.grid_size-1
-            #new_position_array = np.remainder(new_position_array, self.grid_size)
             new_positions.append(tuple(new_position_array))
         return tuple(new_positions)
 
-    #TODO
-    def get_througput(self, beam_index):
-        return beam_index
+    #calculate an estimated throughput based on the combined channel
+    #associated to the actual channel and precoding vector
+    def get_througput(self, scheduled_user, beam_index):
+        positions, previously_scheduled = self.interpret_state(self.current_state_index)
+        channel_h = self.grid_Mimo_Channel.get_specific_channel(positions, scheduled_user)
+        channel_mag = self.analogBeamformer.get_combined_channel(beam_index, channel_h)
+        return channel_mag
 
     def get_state(self):
         """Get the current observation.
@@ -239,39 +252,15 @@ class Mimo_RL_simple(gym.Env):
     def numberOfObservations(self):
         return self.S
 
-def convert_list_of_possible_tuples_in_bidct(list_of_tuples):
-    #assume there are no repeated elements
-    N = len(list_of_tuples)
-    this_bidict = bidict()
-    for n in range(N):
-        this_bidict.put(n,list_of_tuples[n])
-    return this_bidict
-
-def test_bidct():
-    x=list()
-    y=np.zeros((3,1))
-    #x.append(y) #does not work because unhashable type: 'numpy.ndarray'
-    x.append((3,5,'a'))
-    x.append((3,4,'a'))
-    x.append(('b'))
-    bidict = convert_list_of_possible_tuples_in_bidct(x)
-    print(bidict[1])
-    print(bidict.inv['b'])
-
-    #test return
-    x = np.random.randn(3,4)
-    print(x)
-    a = tuple(x.flatten())
-    print(a)
-    print(len(a))
-    b = np.array(a).reshape((3,4))
-    print(b)
-    exit(-1)
 
 if __name__ == '__main__':
     #test_bidct()
     #exit(1)
-    env = Mimo_RL_simple()
+    num_antenna_elements=32
+    grid_size=6
+    analogBeamformer = AnalogBeamformer(num_antenna_elements=num_antenna_elements)
+    grid_Mimo_Channel = Grid_Mimo_Channel(num_antenna_elements=num_antenna_elements, grid_size=6)
+    env = Mimo_RL_Simple_Env(analogBeamformer, grid_Mimo_Channel)
     print('Actions=', env.get_all_possible_actions())
     print('###################')
     print('States=', env.get_all_possible_states())
