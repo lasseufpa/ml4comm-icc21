@@ -15,7 +15,7 @@ class Mimo_RL_simple(gym.Env):
     """Custom Environment that follows gym interface"""
     metadata = {'render.modes': ['human']}
 
-    def __init__(self):
+    def __init__(self,num_of_beams=32):
         super(Mimo_RL_simple, self).__init__()
         self.__version__ = "0.1.0"
 
@@ -28,7 +28,7 @@ class Mimo_RL_simple(gym.Env):
         self.penalty = 100 #if not switching among users
         #a single user can be served by the base station
         self.Nu = 2 #number of users
-        self.Nb = 64 #number of beams
+        self.Nb = num_of_beams #number of beams
         self.Na = 3 #user must be allocated at least once in Na allocations
         self.grid_size = 6 #define grid size: grid_size x grid_size
         #directions each user takes (left, right, up, down). Chosen at the
@@ -36,6 +36,7 @@ class Mimo_RL_simple(gym.Env):
         self.users_directions_indices = np.zeros(self.Nu)
         #directions: up, down, right, left
         self.position_updates = np.array([[0,1],[0,-1],[1,0],[-1,0]])
+        self.last_action_index = -1 #last taken action
 
         #We adopt bidirectional maps based on https://pypi.org/project/bidict/
         self.bidict_actions = convert_list_of_possible_tuples_in_bidct(self.get_all_possible_actions())
@@ -98,6 +99,7 @@ class Mimo_RL_simple(gym.Env):
         
         #update for next iteration
         previous_state_index = self.current_state_index
+        self.last_action_index = action_index
         #loop to shift to the left
         allocated_users_tuple = tuple(allocated_users[1:])        
         #get new positions for the users. Note that this does not depend
@@ -158,6 +160,10 @@ class Mimo_RL_simple(gym.Env):
         #all_states = [(a,b) for a in all_positions for b in previously_scheduled]
         return all_states
 
+    def get_UE_positions(self):
+        positions, previously_scheduled = self.interpret_state(self.current_state_index)
+        return positions
+
     def convert_state_to_index(self,positions,previously_scheduled):
         state = (positions, previously_scheduled)
         state_index = self.bidict_states.inv[state]
@@ -198,6 +204,9 @@ class Mimo_RL_simple(gym.Env):
             return self.current_state_index
         else:
             return self.bidict_states[self.current_state_index]
+
+    def get_last_action(self):
+        return self.interpret_action(self.last_action_index)
 
     def render(self, mode='human'):
         pass
@@ -285,5 +294,6 @@ if __name__ == '__main__':
             #env = EnvironmentMassiveMIMO()
         print(history)
 
-from stable_baselines.common.env_checker import check_env
-check_env(env)
+    if True:
+        from stable_baselines.common.env_checker import check_env
+        check_env(env)
