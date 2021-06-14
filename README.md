@@ -4,7 +4,13 @@ Code for IEEE ICC'2021 Tutorial 14
 
 Aldebaro Klautau (UFPA), Nuria Gonzalez-Prelcic (NCSU) and Robert W. Heath Jr. (NCSU)
 
-June 14, 2021
+June 14, 2021.
+
+In case you find issues in the code, feel free to indicate ti via a message or pull request.
+
+# Reinforcement learning (RL) for beam selection
+
+You can find [here](https://github.com/lasseufpa/ml4comm-icc21/tree/main/mimo_rl) the RL code for a pedagogical beam selection problem in a grid world and information to run it.
 
 # Installation of Jupyter notebooks for 16QAM classification
 
