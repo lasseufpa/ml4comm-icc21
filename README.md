@@ -1,6 +1,6 @@
 # Machine Learning for MIMO Systems with Large Arrays
 
-Code for IEEE ICC'2021 Tutorial 14 
+Code for IEEE ICC'2021 Tutorial 14 - https://icc2021.ieee-icc.org/tutorials
 
 Aldebaro Klautau (UFPA), Nuria Gonzalez-Prelcic (NCSU) and Robert W. Heath Jr. (NCSU)
 
