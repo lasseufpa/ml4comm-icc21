@@ -6,21 +6,17 @@ Aldebaro Klautau (UFPA), Nuria Gonzalez-Prelcic (NCSU) and Robert W. Heath Jr. (
 
 June 14, 2021
 
-# Installation of MimoRL-simple-1-v0 RL agent
+# Installation of Jupyter notebooks for 16QAM classification
 
-The RL agent is executed at a base station (BS) with an antenna array and serves single-antenna users on downlink using an analog MIMO architecture with Nb beam vector indices. The BS and users live in a M x M grid world in which there are M2 invariant channels depending only on position. An episode lasts Ne time slots, and for each episode, a user moves left/right/up/down. It is an episodic (not continuing) task. The reward is the normalized throughput T and a penalyy of -100 is added to T if a user is not allocated for Na consecutive slots and zero otherwise
+The notebooks *lstm_time_variant_channel.ipynb* and *qam_classifiers.ipynb* generate themselves the used data. The main dependencies are listed in requirements.txt. You can use, for instance:
 
+```pip install -r requirements.txt```
 
-The state is defined as a vector with Nu elements for the users’ positions and Na-1 indices of the previously scheduled users.
-The agent action is, at each time slot, to schedule one among Nu users and choose the beam index to serve this user.
+They can also be executed in Google's Colab.
 
-- Install OpenAI gym ...
+# Installation of the beam_selection notebook
 
-- How to run ours
-
-# Installation of beam_selection notebook
-
-In order to run the *beam_selection.ipynb* notebook, you need to download the input and output data for the neural network.
+The notebook *beam_selection.ipynb* requires downloading the input and output data for the neural network.
 The files can be obtained at https://nextcloud.lasseufpa.org/s/mrzEiQXE83YE3kg
 where you can find folders with the three distinct sets of input parameters: coord, image, lidar. You can use only one, all 3 or any combination.
 You also need the correct output labels, which is the file beams_output.npz in the folder beam_output.
