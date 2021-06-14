@@ -17,14 +17,18 @@ from mimo_rl_tools import get_position_combinations
 
 class Mimo_RL_Simple_Env(gym.Env):
     """Custom Environment that follows gym interface"""
-    metadata = {'render.modes': ['human']}
+    #metadata = {'render.modes': ['human']}
 
-    def __init__(self, analogBeamformer, grid_Mimo_Channel):
+    def __init__(self, num_antenna_elements=32, grid_size=6, should_render=False):
         super(Mimo_RL_Simple_Env, self).__init__()
         self.__version__ = "0.1.0"
 
-        self.analogBeamformer = analogBeamformer
-        self.grid_Mimo_Channel = grid_Mimo_Channel
+        self.analogBeamformer = AnalogBeamformer(num_antenna_elements=num_antenna_elements)
+        self.grid_Mimo_Channel = Grid_Mimo_Channel(num_antenna_elements=num_antenna_elements, grid_size=6)
+        self.should_render = should_render
+        if self.should_render:
+            from render_mimo_rl_simple import Mimo_RL_render
+            self.mimo_RL_render = Mimo_RL_render(self.analogBeamformer)
 
         #TODO need to conclude this code for option "False". Use "True"
         #Use True to represent the state by an integer index, as in a 
@@ -38,13 +42,14 @@ class Mimo_RL_Simple_Env(gym.Env):
         self.Nb = self.analogBeamformer.get_num_codevectors() #number of beams
         self.Na = 3 #user must be allocated at least once in Na allocations
         #define grid size: grid_size x grid_size
-        self.grid_size = self.grid_Mimo_Channel.grid_size 
+        self.grid_size = grid_size 
         #directions each user takes (left, right, up, down). Chosen at the
         #beginning of each episode
         self.users_directions_indices = np.zeros(self.Nu)
         #directions: up, down, right, left
         self.position_updates = np.array([[0,1],[0,-1],[1,0],[-1,0]])
         self.last_action_index = -1 #last taken action
+        self.episode_return = 0 #return: sum of rewards over the episode
 
         #We adopt bidirectional maps based on https://pypi.org/project/bidict/
         self.bidict_actions = convert_list_of_possible_tuples_in_bidict(self.get_all_possible_actions())
@@ -114,6 +119,12 @@ class Mimo_RL_Simple_Env(gym.Env):
         #on the action taken by the agent
         new_positions = self.update_users_positions(positions) 
         self.current_state_index = self.convert_state_to_index(tuple(new_positions),tuple(allocated_users_tuple))
+        self.episode_return += self.reward
+
+        #update renderer
+        if self.should_render:
+            self.mimo_RL_render.set_positions(positions, scheduled_user, beam_index)
+            self.mimo_RL_render.render()
 
         #check if episode has finished
         gameOver = False
@@ -129,6 +140,7 @@ class Mimo_RL_Simple_Env(gym.Env):
                    "state": self.interpret_state(previous_state_index),
                    "positions": positions,
                    "reward": self.reward,
+                   "return": self.episode_return,
                    #"users_directions_indices": self.users_directions_indices,
                    "next_state": self.interpret_state(self.current_state_index)}
         
@@ -221,8 +233,9 @@ class Mimo_RL_Simple_Env(gym.Env):
     def get_last_action(self):
         return self.interpret_action(self.last_action_index)
 
-    def render(self, mode='human'):
-        pass
+    #def render(self, mode='human'):
+    def render(self):
+        self.mimo_RL_render.render()
     
     def close (self):
         pass
@@ -235,7 +248,7 @@ class Mimo_RL_Simple_Env(gym.Env):
         observation (object): the initial observation of the space.
         """
         self.currentIteration = 0
-        self.current_state_index = 0 #assumes first state is always 0
+        self.episode_return = 0
         self.users_directions_indices = randint(0,4,size=(self.Nu,))
         self.current_state_index = randint(0, self.get_num_states())
         return self.get_state()
@@ -252,37 +265,24 @@ class Mimo_RL_Simple_Env(gym.Env):
     def numberOfObservations(self):
         return self.S
 
-
-if __name__ == '__main__':
-    #test_bidct()
-    #exit(1)
+def run_debug():
+    from stable_baselines.common.env_checker import check_env
     num_antenna_elements=32
     grid_size=6
-    analogBeamformer = AnalogBeamformer(num_antenna_elements=num_antenna_elements)
-    grid_Mimo_Channel = Grid_Mimo_Channel(num_antenna_elements=num_antenna_elements, grid_size=6)
-    env = Mimo_RL_Simple_Env(analogBeamformer, grid_Mimo_Channel)
-    print('Actions=', env.get_all_possible_actions())
-    print('###################')
-    print('States=', env.get_all_possible_states())
-    print('Action example', env.bidict_actions[3])
-    print('State example', env.bidict_states[7])
+    mimo_RL_Environment = Mimo_RL_Simple_Env(num_antenna_elements=num_antenna_elements, grid_size=grid_size)
+    check_env(mimo_RL_Environment)
 
-    #x = env.get_state()
-    #print(x)
-    #exit(-1)
+if __name__ == '__main__':
+    num_antenna_elements=32
+    grid_size=6
+    mimo_RL_Environment = Mimo_RL_Simple_Env(num_antenna_elements=num_antenna_elements, 
+        grid_size=grid_size, should_render=True)
 
-    N = 61
-    Na = env.get_num_actions()
-    print('# actions = ', Na)
-    print('# states = ', env.get_num_states())
-    for i in range(N):
-        action_index = int(np.random.choice(Na,1)[0])
-        ob, reward, gameOver, history = env.step(action_index)
+    num_steps = 500
+    num_actions = mimo_RL_Environment.get_num_actions()
+    for i in range(num_steps):
+        action_index = randint(0,num_actions)
+        ob, reward, gameOver, history = mimo_RL_Environment.step(action_index)
         if gameOver:
             print('Game over! End of episode.')
-            #env = EnvironmentMassiveMIMO()
         print(history)
-
-    if True:
-        from stable_baselines.common.env_checker import check_env
-        check_env(env)

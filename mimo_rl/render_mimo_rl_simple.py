@@ -9,17 +9,15 @@ import imageio
 from beamforming_calculation import AnalogBeamformer
 
 SLEEP_TIME = 0.3
-MAX_ITERATIONS = 10
 
 class Mimo_RL_render:
-    def __init__(self, analogBeamformer, mimo_RL_Environment):
-        self.should_save_images_as_gif = True #enable saving images in the end
+    def __init__(self, analogBeamformer):
+        self.should_save_images_as_gif = False #Not working: enables saving images in the end
         self.analogBeamformer = analogBeamformer
-        self.mimo_RL_Environment = mimo_RL_Environment
         self.Rx_position = (0,0)
         self.Rx2_position = (5,5)
-
-        self.mimo_RL_Environment.get_UE_positions()
+        self.scheduled_user = 0
+        self.beam_index = 0
 
         #Fixed objects, which do not move
         self.Tx = [1,2]
@@ -47,10 +45,12 @@ class Mimo_RL_render:
         if self.should_save_images_as_gif:
             self.images = []
 
-    def get_positions(self):
-        positions = self.mimo_RL_Environment.get_UE_positions()
+    def set_positions(self, positions, scheduled_user, beam_index):
+        #positions = self.mimo_RL_Environment.get_UE_positions()
         self.Rx_position = positions[0]
         self.Rx2_position = positions[1]
+        self.scheduled_user = scheduled_user
+        self.beam_index = beam_index
 
     def plot_beam(self, scheduled_user, beam_index):
         fig, ax2 = plt.subplots(subplot_kw={'projection': 'polar'})
@@ -91,11 +91,9 @@ class Mimo_RL_render:
 
     def render(self):
         time.sleep(SLEEP_TIME)
-        scheduled_user, beam_index = self.mimo_RL_Environment.get_last_action()
-        self.get_positions()
 
         #plot beam
-        self.plot_beam(scheduled_user, beam_index)                
+        self.plot_beam(self.scheduled_user, self.beam_index)                
         self.render_back()
         self.render_Rx()
         self.render_Rx2()
@@ -106,11 +104,13 @@ class Mimo_RL_render:
                 
         #plt.pause(1)
         if self.should_save_images_as_gif:
+            raise NotImplementedError()
             self.images.append(ImageGrab.grab(bbox=(1960, 1030, 2760, 1830)))
 
         self.pg.display.update()
 
     def save_images_as_gif(self, file_name, duration=3):
+        raise NotImplementedError()
         gif = imageio.mimsave(file_name, self.images, 'GIF', duration=duration)
         #print(gif)
         print('Wrote file', file_name)
