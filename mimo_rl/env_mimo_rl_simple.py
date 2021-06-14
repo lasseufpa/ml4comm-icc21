@@ -1,12 +1,13 @@
 '''
-Mimo_RL_simple environment for ICC Tutorial - June 14, 2021
+Mimo_RL_simple an an OpenAI gym environment for ICC Tutorial - June 14, 2021
 Tutorial 14: Machine Learning for MIMO Systems with Large Arrays
-Aldebaro Klautau (UFPA), Nuria Gonzalez-Prelcic (NCSU) and Robert W. Heath Jr. (NCSU)
+Aldebaro Klautau (UFPA),
+Nuria Gonzalez-Prelcic (NCSU) and
+Robert W. Heath Jr. (NCSU)
 From: https://github.com/lasseufpa/ml4comm-icc21/
 '''
 import numpy as np
 from numpy.random import randint
-from bidict import bidict
 import itertools
 import gym
 from gym import spaces
@@ -17,8 +18,6 @@ from mimo_rl_tools import get_position_combinations
 
 class Mimo_RL_Simple_Env(gym.Env):
     """Custom Environment that follows gym interface"""
-    #metadata = {'render.modes': ['human']}
-
     def __init__(self, num_antenna_elements=32, grid_size=6, should_render=False):
         super(Mimo_RL_Simple_Env, self).__init__()
         self.__version__ = "0.1.0"
@@ -30,7 +29,6 @@ class Mimo_RL_Simple_Env(gym.Env):
             from render_mimo_rl_simple import Mimo_RL_render
             self.mimo_RL_render = Mimo_RL_render(self.analogBeamformer)
 
-        #TODO need to conclude this code for option "False". Use "True"
         #Use True to represent the state by an integer index, as in a 
         #finite Markov decision process
         self.observation_equals_state_index = True
@@ -51,6 +49,12 @@ class Mimo_RL_Simple_Env(gym.Env):
         self.last_action_index = -1 #last taken action
         self.episode_return = 0 #return: sum of rewards over the episode
 
+        #obstacles, fixed objects, which do not move
+        self.obstacles = [[1,2], [3,4], [4,4]]
+        #self.Tx = [1,2]
+        #self.wall1 = [3,4]
+        #self.wall2 = [4,4]
+
         #We adopt bidirectional maps based on https://pypi.org/project/bidict/
         self.bidict_actions = convert_list_of_possible_tuples_in_bidict(self.get_all_possible_actions())
         self.bidict_states = convert_list_of_possible_tuples_in_bidict(self.get_all_possible_states())
@@ -60,7 +64,7 @@ class Mimo_RL_Simple_Env(gym.Env):
         #def get_all_possible_rewards(self):
         self.reward = 0
 
-        #TODO could get this info from the above bidicts
+        #could get this info from the above bidicts
         self.S = len(self.get_all_possible_states())        
         self.A = len(self.get_all_possible_actions())
 
@@ -84,16 +88,6 @@ class Mimo_RL_Simple_Env(gym.Env):
     def step(self, action_index):
         """
         The agent takes a step in the environment.
-        Parameters
-        ----------
-        action :
-        Returns
-        -------
-        ob, reward, episode_over, info : tuple
-            ob (object) :
-            reward (float) :
-            episode_over (bool) :
-            info (dict) :
         """
         #interpret action: convert from index to useful information
         scheduled_user, beam_index = self.interpret_action(action_index)
@@ -146,6 +140,11 @@ class Mimo_RL_Simple_Env(gym.Env):
         
         self.currentIteration += 1 #update iteration counter
         return ob, self.reward, gameOver, history
+
+    def enable_rendering(self):
+        self.should_render = True
+        from render_mimo_rl_simple import Mimo_RL_render
+        self.mimo_RL_render = Mimo_RL_render(self.analogBeamformer)
 
     def get_num_states(self):
         return self.S
@@ -202,12 +201,33 @@ class Mimo_RL_Simple_Env(gym.Env):
         previously_scheduled = state[1]
         return positions, previously_scheduled
 
-    #TODO avoid obstacles and base station
+    #recall the directions: up, down, right, left
+    #self.position_updates = np.array([[0,1],[0,-1],[1,0],[-1,0]])
+    def deal_with_obstacles(self, u, new_position_array):
+        num_obstacles = len(self.obstacles)
+        for i in range(num_obstacles):
+            if (self.obstacles[i][0] == new_position_array[0]) and (self.obstacles[i][1] == new_position_array[1]):
+                #go back to previous position
+                new_position_array = new_position_array - self.position_updates[self.users_directions_indices[u]]
+                #change direction
+                if self.users_directions_indices[u] == 0:
+                    self.users_directions_indices[u] = 1
+                elif self.users_directions_indices[u] == 1:
+                    self.users_directions_indices[u] = 0
+                elif self.users_directions_indices[u] == 2:
+                    self.users_directions_indices[u] = 3
+                elif self.users_directions_indices[u] == 3:
+                    self.users_directions_indices[u] = 2
+                break        
+        return new_position_array
+
+    #get new positions, avoiding obstacles and base station
     def update_users_positions(self, positions):
         positions_as_array = np.array(positions)
         new_positions = list()        
         for u in range(self.Nu):
             new_position_array = positions_as_array[u] + self.position_updates[self.users_directions_indices[u]]
+            new_position_array = self.deal_with_obstacles(u, new_position_array)
             #wrap-around grid:
             new_position_array[np.where(new_position_array>self.grid_size-1)] = 0
             new_position_array[np.where(new_position_array<0)] = self.grid_size-1

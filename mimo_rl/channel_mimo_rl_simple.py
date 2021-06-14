@@ -1,4 +1,6 @@
 '''
+From: https://github.com/lasseufpa/ml4comm-icc21/
+
 Very simple channel calculation for Mimo_RL_Simple_Env.
 We assume the base station has an ULA and the users have
 single antennas. The channels are time-invariant, and we

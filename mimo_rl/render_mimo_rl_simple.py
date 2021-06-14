@@ -1,14 +1,21 @@
+'''
+Shows the grid world using pygame.
+ICC Tutorial - June 14, 2021
+Tutorial 14: Machine Learning for MIMO Systems with Large Arrays
+Aldebaro Klautau (UFPA),
+Nuria Gonzalez-Prelcic (NCSU) and
+Robert W. Heath Jr. (NCSU)
+'''
 import time
-#import grid_RL_env as itu
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import numpy as np
 import pygame as pg
 import pyscreenshot as ImageGrab
 import imageio
-from beamforming_calculation import AnalogBeamformer
+#from beamforming_calculation import AnalogBeamformer
 
-SLEEP_TIME = 0.3
+SLEEP_TIME = 0.3 #time to sleep and allow visualizing the world :)
 
 class Mimo_RL_render:
     def __init__(self, analogBeamformer):
@@ -60,9 +67,7 @@ class Mimo_RL_render:
             colorCar = 'red'
         angles = self.analogBeamformer.angles_for_plotting
         beam_values = self.analogBeamformer.beams_for_plotting[:,beam_index]
-        beam_values = np.abs(beam_values)
-        #print('AAAAAAAA:', beam_values.shape)
-        #exit(1)
+        beam_values = np.abs(beam_values) #take absolute values
 
         ax2.plot(angles, beam_values, color=colorCar)
         ax2.set_axis_off()
