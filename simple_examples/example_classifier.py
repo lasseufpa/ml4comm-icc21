@@ -1,3 +1,7 @@
+'''
+Simple examples of classifiers.
+Tested with Python 3.6 and tensorflow==1.14.0
+'''
 from numpy.random import randint, standard_normal
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
