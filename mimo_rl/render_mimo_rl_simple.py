@@ -60,6 +60,10 @@ class Mimo_RL_render:
             colorCar = 'red'
         angles = self.analogBeamformer.angles_for_plotting
         beam_values = self.analogBeamformer.beams_for_plotting[:,beam_index]
+        beam_values = np.abs(beam_values)
+        #print('AAAAAAAA:', beam_values.shape)
+        #exit(1)
+
         ax2.plot(angles, beam_values, color=colorCar)
         ax2.set_axis_off()
         ax2.grid(False)
