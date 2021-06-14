@@ -1,5 +1,6 @@
 '''
 Illustrates reinforcement learning using the beam selection problem.
+Use tensorboard to visualize training convergence.
 ICC Tutorial - June 14, 2021
 Tutorial 14: Machine Learning for MIMO Systems with Large Arrays
 Aldebaro Klautau (UFPA),
