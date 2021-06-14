@@ -1,45 +1,12 @@
-Nu = 2
-Nb = 64
+# Installation of MimoRL-simple-1-v0 RL agent
 
-action = (user, beam_index) = 3
-action space dim = Nu * Nb ==> 128 possible actions.
+Besides the dependencies described for the Jupyter notebooks of this tutorial, in order to run the RL code you will need 
+[Stable-Baselines](https://stable-baselines.readthedocs.io/en/master/) (we used stable-baselines version 2.10.2), OpenAI gym (we used gym==0.18.0), pygame (we used pygame==2.0.1) and bidict (we used bidict==0.21.2). 
 
-M = 6 ==> 6 x 6 grid
-Na = 3 
-state = [position_user1, ..., position_user_Nu, previously_scheduled_users]
-state space dim = (M^2)^Nu*(Nu)^(Na-1) ==> 5184 possible states.
+You can install bidict, for instance, with:
 
-Example:
-Ok: 0 0 1 0 0 1 0 1 0 1
-Não Ok: 0 0 0 0 0 1 1 1 1 1
+```
+pip install bidict
+```
 
-env
-   previously_scheduled_users[Na-1]
-   penalty = 100
-
-step()
-previously_scheduled_users=[0,1]
-at time t=0  action = (0, 23)    
-    throughput = combined_gain #codigo do Ailton
-    scheduled_user = 0
-    if len(np.unique([previously_scheduled_users scheduled_user])) == Nu:
-    	reward = throughput
-    else:
-	reward = throughput - penalty 
-    #update for next iteration
-    loop to shift to the left
-    	previously_scheduled_users    
-
-at time t=1  action = (1, 12)
-previously_scheduled_users=[1, 0]
-
-at time t=2  action = (1, 3)
-previously_scheduled_users=[1, 1]
-
-
-### Nao sei se util:
-git_lasse\ak-py\akpy
-FiniteMDP.py
-e
-FiniteMDP2.py
-GridWorldFiniteMDP.py
+The RL agent is executed at a base station (BS) with an antenna array and serves single-antenna users on downlink using an analog MIMO architecture with Nb beam vector indices. The BS and users live in a M x M grid world in which there are M2 invariant channels depending only on position. An episode lasts Ne time slots, and for each episode, a user moves left/right/up/down. It is an episodic (not continuing) task. The reward is a normalized throughput (in fact, thee magnitude of the combined channel) and a penalyy of -100 is added if a user is not allocated for Na=3 consecutive slots.
