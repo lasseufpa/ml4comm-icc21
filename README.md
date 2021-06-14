@@ -6,7 +6,7 @@ Aldebaro Klautau (UFPA), Nuria Gonzalez-Prelcic (NCSU) and Robert W. Heath Jr. (
 
 June 14, 2021.
 
-In case you find issues in the code, feel free to indicate ti via a message or pull request.
+In case you find issues in the code, feel free to indicate it by creating an issue or even contributing via a pull request.
 
 # Reinforcement learning (RL) for beam selection
 
